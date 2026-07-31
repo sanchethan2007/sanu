@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peony fireworks</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    font-family: 'Georgia', 'Iowan Old Style', serif;
+    overflow: hidden;
+    background: #05060a;
+  }
+  body { position: relative; }
+  #stars {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: #fff;
+    border-radius: 50%;
+    opacity: 0.5;
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle { 0%,100% { opacity: 0.15; } 50% { opacity: 0.8; } }
+  #title-wrap {
+    position: absolute;
+    top: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    pointer-events: none;
+    z-index: 5;
+  }
+  #title-wrap h1 {
+    font-size: 32px;
+    font-weight: 400;
+    color: #F5DCE8;
+    letter-spacing: 2px;
+    text-shadow: 0 0 20px rgba(245, 150, 200, 0.6);
+  }
+  #title-wrap p {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #C89AB0;
+    font-style: italic;
+    letter-spacing: 1px;
+  }
+  #sky {
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+  }
+  #hint {
+    position: absolute;
+    bottom: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    color: #C89AB0;
+    font-style: italic;
+    opacity: 0.6;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<div id="title-wrap">
+  <h1>peony fireworks</h1>
+  <p>tap the sky to set one off</p>
+</div>
+
+<div id="sky">
+  <div id="hint">tap anywhere</div>
+</div>
+
+<script>
+const sky = document.getElementById('sky');
+const hint = document.getElementById('hint');
+const starsLayer = document.getElementById('stars');
+
+for (let i = 0; i < 60; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  s.style.left = Math.random() * 100 + '%';
+  s.style.top = Math.random() * 100 + '%';
+  s.style.animationDelay = (Math.random() * 3).toFixed(2) + 's';
+  starsLayer.appendChild(s);
+}
+
+const palettes = [
+  { petal: '#FF6FA5', petal2: '#FF3D82', petal3: '#FFC1DC', center: '#FFD966', glow: '#FF4D94' },
+  { petal: '#C77DFF', petal2: '#9D4EDD', petal3: '#E4C1FF', center: '#FFD966', glow: '#B15CFF' },
+  { petal: '#FF8FA3', petal2: '#FF4D6D', petal3: '#FFD6E0', center: '#FFE066', glow: '#FF5C8A' },
+  { petal: '#63E6E2', petal2: '#2FC9C4', petal3: '#B8F5F2', center: '#FFE066', glow: '#3FE0DB' },
+  { petal: '#FFB4E6', petal2: '#FF7FCB', petal3: '#FFE3F3', center: '#FFD966', glow: '#FF8FD6' }
+];
+
+let uid = 0;
+function nextId() { uid += 1; return 'p' + Date.now() + uid; }
+
+function bloomSVG(p, size) {
+  const c = size / 2;
+  const petals = [];
+  const layers = [
+    { n: 8, r: size * 0.42, s: size * 0.30, color: p.petal },
+    { n: 7, r: size * 0.28, s: size * 0.24, color: p.petal2 },
+    { n: 6, r: size * 0.14, s: size * 0.16, color: p.petal3 }
+  ];
+  layers.forEach(layer => {
+    for (let i = 0; i < layer.n; i++) {
+      const ang = (360 / layer.n) * i + (layer.r * 1.7);
+      const rad = ang * Math.PI / 180;
+      const px = c + Math.cos(rad) * layer.r;
+      const py = c + Math.sin(rad) * layer.r;
+      petals.push(`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${(layer.s * 0.55).toFixed(1)}" ry="${layer.s.toFixed(1)}" fill="${layer.color}" transform="rotate(${(ang + 90).toFixed(1)} ${px.toFixed(1)} ${py.toFixed(1)})" opacity="0.96"/>`);
+    }
+  });
+  petals.push(`<circle cx="${c}" cy="${c}" r="${size * 0.09}" fill="${p.center}"/>`);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block; filter: drop-shadow(0 0 ${(size*0.12).toFixed(0)}px ${p.glow});">${petals.join('')}</svg>`;
+}
+
+function burstPeony(x, y) {
+  if (hint) hint.style.opacity = '0';
+
+  const p = palettes[Math.floor(Math.random() * palettes.length)];
+  const size = 70 + Math.random() * 60;
+  const burstId = nextId();
+  const rayCount = 14;
+
+  const flash = document.createElement('div');
+  flash.style.cssText = `position:absolute; left:${x - 4}px; top:${y - 4}px; width:8px; height:8px; border-radius:50%; background:#fff; box-shadow: 0 0 30px 12px ${p.glow}; animation: flash-${burstId} 0.4s ease-out forwards;`;
+  const flashStyle = document.createElement('style');
+  flashStyle.textContent = `@keyframes flash-${burstId} { 0% { transform: scale(0.3); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }`;
+  document.head.appendChild(flashStyle);
+  sky.appendChild(flash);
+  setTimeout(() => { flash.remove(); flashStyle.remove(); }, 450);
+
+  for (let i = 0; i < rayCount; i++) {
+    const ang = (360 / rayCount) * i + Math.random() * 10;
+    const rad = ang * Math.PI / 180;
+    const dist = 40 + Math.random() * 50;
+    const dx = Math.cos(rad) * dist;
+    const dy = Math.sin(rad) * dist;
+    const rayId = nextId();
+    const ray = document.createElement('div');
+    ray.style.cssText = `position:absolute; left:${x}px; top:${y}px; width:3px; height:3px; border-radius:50%; background:${p.petal2}; box-shadow: 0 0 6px 1px ${p.glow}; animation: ray-${rayId} 0.7s ease-out forwards;`;
+    const rayStyle = document.createElement('style');
+    rayStyle.textContent = `@keyframes ray-${rayId} { 0% { transform: translate(0,0); opacity: 1; } 100% { transform: translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px); opacity: 0; } }`;
+    document.head.appendChild(rayStyle);
+    sky.appendChild(ray);
+    setTimeout(() => { ray.remove(); rayStyle.remove(); }, 750);
+  }
+
+  const sway = (Math.random() * 3 + 3).toFixed(2);
+  const tilt = (Math.random() * 16 - 8).toFixed(1);
+  const bloom = document.createElement('div');
+  bloom.style.cssText = `position:absolute; left:${x - size / 2}px; top:${y - size / 2}px; width:${size}px; height:${size}px; transform: scale(0) rotate(${tilt}deg); animation: bloom-${burstId} 0.7s cubic-bezier(.34,1.56,.64,1) 0.15s forwards, glowpulse-${burstId} 2.4s ease-in-out 0.85s infinite;`;
+  bloom.innerHTML = bloomSVG(p, size);
+
+  const bloomStyle = document.createElement('style');
+  bloomStyle.textContent = `
+    @keyframes bloom-${burstId} { 0% { transform: scale(0) rotate(${tilt}deg); opacity:0; } 60% { transform: scale(1.15) rotate(${tilt}deg); opacity:1; } 100% { transform: scale(1) rotate(${tilt}deg); opacity:1; } }
+    @keyframes glowpulse-${burstId} { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
+  `;
+  document.head.appendChild(bloomStyle);
+  sky.appendChild(bloom);
+
+  const blooms = sky.querySelectorAll(':scope > div:not(#hint)');
+  if (blooms.length > 22) blooms[0].remove();
+}
+
+sky.addEventListener('click', (e) => {
+  const rect = sky.getBoundingClientRect();
+  burstPeony(e.clientX - rect.left, e.clientY - rect.top);
+});
+
+window.addEventListener('load', () => {
+  const rect = sky.getBoundingClientRect();
+  const spots = [[0.25, 0.35], [0.6, 0.5], [0.4, 0.65], [0.75, 0.3]];
+  spots.forEach((s, i) => {
+    setTimeout(() => burstPeony(rect.width * s[0], rect.height * s[1]), 500 + i * 500);
+  });
+});
+</script>
+
+</body>
+</html>
